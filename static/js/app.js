@@ -1496,6 +1496,7 @@ function resetAggregate() {
   $("#aggregate_panel").hide();
   $("#aggregate-toggle").removeClass("agg-open");
   $("#pagination").removeClass("agg-panel-open");
+  adjustOutputTop();
 }
 
 // Build the full SELECT query string for the Show Query display. Delegates to
@@ -2318,20 +2319,19 @@ $(document).ready(function() {
 
   $("#agg-show-query").on("click", function() {
     var display = $("#adv_query_display");
-    $("#adv_query_display").hide();
     if (display.is(":visible")) {
-      display.hide();
-    } else {
-      var q = buildAggregateQuery();
-      if (!q) {
-        alert("Select at least one column to group by.");
-        adjustOutputTop();
-        return;
-      }
-      $("#adv_query_text").text(q + ";");
-      display.show();
+      display.slideUp(100, adjustOutputTop);
+      return;
     }
-    adjustOutputTop();
+    display.find("#adv_query_text").text("");
+    var q = buildAggregateQuery();
+    if (!q) {
+      alert("Select at least one column to group by.");
+      adjustOutputTop();
+      return;
+    }
+    $("#adv_query_text").text(q + ";");
+    display.slideDown(100, adjustOutputTop);
   });
 
   // Add a new condition row
@@ -2376,20 +2376,20 @@ $(document).ready(function() {
   // Show/hide the raw SQL query preview
   $("#adv-show-query").on("click", function() {
     var display = $("#adv_query_display");
-    $("#adv_query_display").hide();
     if (display.is(":visible")) {
       display.slideUp(100, adjustOutputTop);
       $(this).find("i").removeClass("fa-chevron-up").addClass("fa-code");
-    } else {
-      var sql = buildFullQuery();
-      if (!sql) {
-        alert("No valid conditions to preview. Fill in at least one complete condition.");
-        return;
-      }
-      $("#adv_query_text").text(sql);
-      display.slideDown(100, adjustOutputTop);
-      $(this).find("i").removeClass("fa-code").addClass("fa-chevron-up");
+      return;
     }
+    display.find("#adv_query_text").text("");
+    var sql = buildFullQuery();
+    if (!sql) {
+      alert("No valid conditions to preview. Fill in at least one complete condition.");
+      return;
+    }
+    $("#adv_query_text").text(sql);
+    display.slideDown(100, adjustOutputTop);
+    $(this).find("i").removeClass("fa-code").addClass("fa-chevron-up");
   });
 
   // Copy raw query to clipboard
