@@ -1196,6 +1196,90 @@ function buildAggregateRow() {
   return $('<div class="agg-expr-row"></div>').append(fnSelect, colSelect, aliasInput, removeBtn);
 }
 
+function getAggregateAliases() {
+  var seen = {};
+  var aliases = [];
+  $("#agg_expr_rows .agg-expr-row").each(function() {
+    var fn    = $(this).find(".agg-fn").val() || "";
+    var col   = $(this).find(".agg-col").val() || "";
+    var alias = $.trim($(this).find(".agg-alias").val());
+    if (alias === "") {
+      if (fn === "COUNT(*)") {
+        alias = "count";
+      } else {
+        alias = fn.toLowerCase() + (col ? "_" + col : "");
+      }
+    }
+    var base = alias;
+    var n = 2;
+    while (seen[alias]) {
+      alias = base + "_" + n;
+      n++;
+    }
+    seen[alias] = true;
+    aliases.push(alias);
+  });
+  return aliases;
+}
+
+function buildHavingRow(isFirst) {
+  var row = $('<div class="adv-search-row" data-row-conj="AND"></div>');
+  if (isFirst) {
+    row.append('<div class="adv-row-conj adv-row-conj-first"><span>WHERE</span></div>');
+  } else {
+    row.append(
+      '<div class="adv-row-conj">' +
+        '<button type="button" class="btn btn-xs adv-conj-btn active" data-conj="AND">AND</button>' +
+        '<button type="button" class="btn btn-xs adv-conj-btn" data-conj="OR">OR</button>' +
+      '</div>'
+    );
+  }
+
+  var aliases = getAggregateAliases();
+  var exprSelect = $('<select class="having-expr form-control"></select>');
+  if (aliases.length === 0) {
+    exprSelect.append('<option value=""></option>');
+  } else {
+    $.each(aliases, function(i, a) {
+      exprSelect.append($('<option></option>').val(a).text(a));
+    });
+  }
+
+  var opSelect = $('<select class="having-op form-control"></select>');
+  $.each(["=", "<>", "<", ">", "<=", ">="], function(i, op) {
+    opSelect.append($('<option></option>').val(op).text(op));
+  });
+
+  var valInput = $('<input type="text" class="having-val form-control" placeholder="Value" />');
+
+  row.append(exprSelect).append(opSelect).append(valInput);
+
+  if (!isFirst) {
+    row.append('<button type="button" class="btn btn-default btn-xs adv-remove-row"><i class="fa fa-minus"></i></button>');
+  }
+
+  return row;
+}
+
+function updateHavingAliasDropdowns() {
+  var aliases = getAggregateAliases();
+  $("#agg_having_rows .adv-search-row").each(function() {
+    var sel  = $(this).find(".having-expr");
+    var prev = sel.val();
+    sel.empty();
+    if (aliases.length === 0) {
+      sel.append('<option value=""></option>');
+    } else {
+      $.each(aliases, function(i, a) {
+        sel.append($('<option></option>').val(a).text(a));
+      });
+    }
+    if (prev && aliases.indexOf(prev) !== -1) {
+      sel.val(prev);
+    }
+  });
+}
+
 // Build a combined SQL WHERE clause from all advanced search condition rows.
 function buildAdvancedWhereClause() {
   var parts = []; // array of {expr, conj}
@@ -2075,6 +2159,22 @@ $(document).ready(function() {
 
   $("#agg-add-expr").on("click", function() {
     $("#agg_expr_rows").append(buildAggregateRow());
+  });
+
+  $("#agg_having_rows").on("click", ".adv-conj-btn", function() {
+    var btn = $(this);
+    btn.closest(".adv-row-conj").find(".adv-conj-btn").removeClass("active");
+    btn.addClass("active");
+    btn.closest(".adv-search-row").data("row-conj", btn.data("conj"));
+  });
+
+  $("#agg_having_rows").on("click", ".adv-remove-row", function() {
+    $(this).closest(".adv-search-row").remove();
+  });
+
+  $("#agg-add-having").on("click", function() {
+    var isFirst = $("#agg_having_rows").children().length === 0;
+    $("#agg_having_rows").append(buildHavingRow(isFirst));
   });
 
   // Add a new condition row
