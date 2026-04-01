@@ -9,6 +9,7 @@ var autocompleteObjects = [];
 var inputResizing       = false;
 var inputResizeOffset   = null;
 var advancedSearchActive = false;
+var aggregateActive = false;
 
 var filterOptions = {
   // Standard comparison (single value) — also used by simple filter
@@ -1085,6 +1086,8 @@ function buildTableFilters(name, type) {
       $("#adv_search_rows").append(buildAdvancedSearchRow(true));
       bindAdvancedOpHandlers();
     }
+
+    buildGroupBySection();
   });
 }
 
@@ -1158,6 +1161,19 @@ function buildAdvancedSearchRow(isFirst) {
   }
 
   return row;
+}
+
+function buildGroupBySection() {
+  var grid = $("#agg_group_by_grid");
+  grid.empty();
+  $("#pagination select.column option").each(function() {
+    var val = $(this).val();
+    if (!val) return;
+    var label = $("<label>");
+    var cb = $("<input>", { type: "checkbox", class: "agg-group-col", value: val });
+    label.append(cb).append(" " + val);
+    grid.append(label);
+  });
 }
 
 // Build a combined SQL WHERE clause from all advanced search condition rows.
@@ -1998,6 +2014,24 @@ $(document).ready(function() {
       });
       $(this).find("i").removeClass("fa-caret-down").addClass("fa-caret-up");
     }
+  });
+
+  // ---- Aggregate Panel ------------------------------------------------
+
+  // Toggle the aggregate panel open/closed
+  $("#aggregate-toggle").on("click", function() {
+    var panel = $("#aggregate_panel");
+    if (panel.is(":visible")) {
+      panel.hide();
+      $("#aggregate-toggle").removeClass("agg-open");
+      $("#pagination").removeClass("agg-panel-open");
+    } else {
+      buildGroupBySection();
+      panel.show();
+      $("#aggregate-toggle").addClass("agg-open");
+      $("#pagination").addClass("agg-panel-open");
+    }
+    adjustOutputTop();
   });
 
   // Add a new condition row
