@@ -658,6 +658,21 @@ function showTableContent(sortColumn, sortOrder) {
     return;
   }
 
+  if (aggregateActive) {
+    var aggQuery = buildAggregateQuery();
+    if (!aggQuery) { alert("Select at least one column to group by."); return; }
+    executeQuery(aggQuery, function(data) {
+      $("#input").hide();
+      $("#body").prop("class", "with-pagination");
+      adjustOutputTop();
+      buildTable(data);
+      setCurrentTab("table_content");
+      updatePaginator(data.pagination);
+      $("#results").data("mode", "aggregate").data("table", name);
+    });
+    return;
+  }
+
   var opts = {
     limit:       getRowsLimit(),
     offset:      getPaginationOffset(),
@@ -1480,9 +1495,12 @@ function resetAggregate() {
 
 // Build the full SELECT query string for the current advanced search conditions.
 function buildFullQuery() {
+  if (aggregateActive) {
+    var aggQ = buildAggregateQuery();
+    return aggQ ? aggQ + ";" : null;
+  }
   var where = buildAdvancedWhereClause();
   if (!where) return null;
-
   var table = getCurrentObject().name;
   var nameParts = table.split(".");
   var sql;
@@ -2107,6 +2125,7 @@ $(document).ready(function() {
     $(".current-page").data("page", 1);
     $(".filters select, .filters input").val("");
     resetAdvancedSearch();
+    resetAggregate();
 
     if (currentObject.type == "function") {
       sessionStorage.setItem("tab", "table_structure");
@@ -2195,6 +2214,7 @@ $(document).ready(function() {
   $("button.reset-filters").on("click", function() {
     $(".filters select, .filters input").val("");
     resetAdvancedSearch();
+    resetAggregate();
     showTableContent();
   });
 
