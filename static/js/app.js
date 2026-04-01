@@ -1335,7 +1335,9 @@ function buildHavingClause() {
     var val     = $.trim($(this).find(".having-val").val());
     var rowConj = $(this).data("row-conj") || "AND";
     if (expr === "" || op === "" || val === "") return;
-    parts.push({ expr: expr + " " + op + " " + val, conj: rowConj });
+    var numVal = parseFloat(val);
+    if (isNaN(numVal)) return;
+    parts.push({ expr: expr + " " + op + " " + String(numVal), conj: rowConj });
   });
   if (parts.length === 0) return null;
   var sql = parts[0].expr;
@@ -1491,6 +1493,9 @@ function resetAggregate() {
   buildGroupBySection();
   $("#agg_expr_rows").empty();
   $("#agg_having_rows").empty();
+  $("#aggregate_panel").hide();
+  $("#aggregate-toggle").removeClass("agg-open");
+  $("#pagination").removeClass("agg-panel-open");
 }
 
 // Build the full SELECT query string for the Show Query display. Delegates to
@@ -2053,6 +2058,7 @@ function bindContentModalEvents() {
   });
 
   $("#results").on("dblclick", "td > div", function() {
+    if (aggregateActive) return;
     var value = unescapeHtml($(this).html());
     if (!value) return;
 
@@ -2162,6 +2168,7 @@ $(document).ready(function() {
   })
 
   $("#results").on("click", "th", function(e) {
+    if (aggregateActive) return;
     if (!$("#table_content").hasClass("selected")) return;
 
     var sortColumn = $(this).data("name");
@@ -2311,6 +2318,7 @@ $(document).ready(function() {
 
   $("#agg-show-query").on("click", function() {
     var display = $("#adv_query_display");
+    $("#adv_query_display").hide();
     if (display.is(":visible")) {
       display.hide();
     } else {
@@ -2368,6 +2376,7 @@ $(document).ready(function() {
   // Show/hide the raw SQL query preview
   $("#adv-show-query").on("click", function() {
     var display = $("#adv_query_display");
+    $("#adv_query_display").hide();
     if (display.is(":visible")) {
       display.slideUp(100, adjustOutputTop);
       $(this).find("i").removeClass("fa-chevron-up").addClass("fa-code");
