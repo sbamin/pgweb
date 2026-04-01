@@ -1493,7 +1493,8 @@ function resetAggregate() {
   $("#agg_having_rows").empty();
 }
 
-// Build the full SELECT query string for the current advanced search conditions.
+// Build the full SELECT query string for the Show Query display. Delegates to
+// buildAggregateQuery() when aggregateActive, otherwise uses advanced search conditions.
 function buildFullQuery() {
   if (aggregateActive) {
     var aggQ = buildAggregateQuery();
