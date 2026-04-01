@@ -1459,6 +1459,25 @@ function resetAdvancedSearch() {
   $("#adv_search_rows").append(buildAdvancedSearchRow(true));
 }
 
+function applyAggregate() {
+  if (buildGroupByClause() === null) {
+    alert("Select at least one column to group by.");
+    return;
+  }
+  aggregateActive = true;
+  $("#agg_active_badge").show();
+  $(".current-page").data("page", 1);
+  showTableContent();
+}
+
+function resetAggregate() {
+  aggregateActive = false;
+  $("#agg_active_badge").hide();
+  buildGroupBySection();
+  $("#agg_expr_rows").empty();
+  $("#agg_having_rows").empty();
+}
+
 // Build the full SELECT query string for the current advanced search conditions.
 function buildFullQuery() {
   var where = buildAdvancedWhereClause();
@@ -2258,6 +2277,32 @@ $(document).ready(function() {
   $("#agg-add-having").on("click", function() {
     var isFirst = $("#agg_having_rows").children().length === 0;
     $("#agg_having_rows").append(buildHavingRow(isFirst));
+  });
+
+  $("#agg-apply").on("click", function() {
+    applyAggregate();
+  });
+
+  $("#agg-reset").on("click", function() {
+    resetAggregate();
+    showTableContent();
+  });
+
+  $("#agg-show-query").on("click", function() {
+    var display = $("#adv_query_display");
+    if (display.is(":visible")) {
+      display.hide();
+    } else {
+      var q = buildAggregateQuery();
+      if (!q) {
+        alert("Select at least one column to group by.");
+        adjustOutputTop();
+        return;
+      }
+      $("#adv_query_text").text(q + ";");
+      display.show();
+    }
+    adjustOutputTop();
   });
 
   // Add a new condition row
