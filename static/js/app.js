@@ -1176,6 +1176,26 @@ function buildGroupBySection() {
   });
 }
 
+function buildAggregateRow() {
+  var colHtml = $("#pagination select.column").html() || "<option value='' selected>Select column</option>";
+
+  var fnSelect = $('<select class="form-control agg-fn"></select>').append(
+    $('<option value="COUNT(*)">COUNT(*)</option>'),
+    $('<option value="SUM">SUM</option>'),
+    $('<option value="AVG">AVG</option>'),
+    $('<option value="MIN">MIN</option>'),
+    $('<option value="MAX">MAX</option>')
+  );
+
+  var colSelect = $('<select class="form-control agg-col agg-col-hidden"></select>').html(colHtml);
+
+  var aliasInput = $('<input type="text" class="form-control agg-alias" placeholder="alias (optional)" />');
+
+  var removeBtn = $('<button type="button" class="btn btn-default btn-xs agg-remove-row"><i class="fa fa-minus"></i></button>');
+
+  return $('<div class="agg-expr-row"></div>').append(fnSelect, colSelect, aliasInput, removeBtn);
+}
+
 // Build a combined SQL WHERE clause from all advanced search condition rows.
 function buildAdvancedWhereClause() {
   var parts = []; // array of {expr, conj}
@@ -2032,6 +2052,29 @@ $(document).ready(function() {
       $("#pagination").addClass("agg-panel-open");
     }
     adjustOutputTop();
+  });
+
+  $("#agg_expr_rows").on("change", ".agg-fn", function() {
+    var colSelect = $(this).siblings(".agg-col");
+    if ($(this).val() === "COUNT(*)") {
+      colSelect.addClass("agg-col-hidden");
+    } else {
+      colSelect.removeClass("agg-col-hidden");
+    }
+    updateHavingAliasDropdowns();
+  });
+
+  $("#agg_expr_rows").on("input", ".agg-alias", function() {
+    updateHavingAliasDropdowns();
+  });
+
+  $("#agg_expr_rows").on("click", ".agg-remove-row", function() {
+    $(this).closest(".agg-expr-row").remove();
+    updateHavingAliasDropdowns();
+  });
+
+  $("#agg-add-expr").on("click", function() {
+    $("#agg_expr_rows").append(buildAggregateRow());
   });
 
   // Add a new condition row
