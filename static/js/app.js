@@ -1280,6 +1280,89 @@ function updateHavingAliasDropdowns() {
   });
 }
 
+function buildAggregateSelectClause() {
+  var parts = [];
+  $(".agg-group-col:checked").each(function() {
+    parts.push('"' + $(this).val() + '"');
+  });
+  var aliases = getAggregateAliases();
+  var i = 0;
+  $("#agg_expr_rows .agg-expr-row").each(function() {
+    var fn    = $(this).find(".agg-fn").val() || "";
+    var col   = $(this).find(".agg-col").val() || "";
+    var alias = aliases[i] || "";
+    i++;
+    var expr;
+    if (fn === "COUNT(*)") {
+      expr = "COUNT(*) AS " + alias;
+    } else {
+      expr = fn + '("' + col + '") AS ' + alias;
+    }
+    parts.push(expr);
+  });
+  return parts.join(", ");
+}
+
+function buildGroupByClause() {
+  var cols = [];
+  $(".agg-group-col:checked").each(function() {
+    cols.push('"' + $(this).val() + '"');
+  });
+  if (cols.length === 0) return null;
+  return "GROUP BY " + cols.join(", ");
+}
+
+function buildHavingClause() {
+  var parts = [];
+  $("#agg_having_rows .adv-search-row").each(function() {
+    var expr    = $(this).find(".having-expr").val() || "";
+    var op      = $(this).find(".having-op").val()   || "";
+    var val     = $.trim($(this).find(".having-val").val());
+    var rowConj = $(this).data("row-conj") || "AND";
+    if (expr === "" || op === "" || val === "") return;
+    parts.push({ expr: expr + " " + op + " " + val, conj: rowConj });
+  });
+  if (parts.length === 0) return null;
+  var sql = parts[0].expr;
+  for (var i = 1; i < parts.length; i++) {
+    sql += " " + parts[i].conj + " " + parts[i].expr;
+  }
+  return "HAVING " + sql;
+}
+
+function buildAggregateQuery() {
+  var obj   = getCurrentObject();
+  var parts = obj.name.split(".");
+  var tableRef;
+  if (parts.length === 2) {
+    tableRef = '"' + parts[0] + '"."' + parts[1] + '"';
+  } else {
+    tableRef = '"' + parts[0] + '"';
+  }
+
+  var selectClause = buildAggregateSelectClause();
+  var groupBy      = buildGroupByClause();
+  if (!groupBy) return null;
+
+  var sql = "SELECT " + selectClause + " FROM " + tableRef;
+
+  if (advancedSearchActive) {
+    var where = $("#advanced_search_panel").data("where");
+    if (where) sql += " WHERE " + where;
+  }
+
+  sql += " " + groupBy;
+
+  var having = buildHavingClause();
+  if (having) sql += " " + having;
+
+  sql += " LIMIT " + getRowsLimit();
+  var offset = getPaginationOffset();
+  if (offset > 0) sql += " OFFSET " + offset;
+
+  return sql;
+}
+
 // Build a combined SQL WHERE clause from all advanced search condition rows.
 function buildAdvancedWhereClause() {
   var parts = []; // array of {expr, conj}
